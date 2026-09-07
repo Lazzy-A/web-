@@ -32,23 +32,21 @@
 | 认证 | JWT（python-jose） + bcrypt（passlib） |
 | 文档 | Swagger UI（自动生成） |
 
----
-
 ## 📁 项目结构
+
+```
 web/
-├── main.py # 应用入口
-├── alembic/ # 数据库迁移目录
+├── main.py                         # 应用入口
+├── alembic/                        # 数据库迁移目录
 ├── app/
-│ ├── database.py # 数据库连接
-│ ├── core/ # 认证工具
-│ ├── models/ # 数据表模型
-│ ├── schemas/ # Pydantic 校验模型
-│ └── routers/ # 路由层（业务逻辑）
-├── requirements.txt # 项目依赖
-└── .gitignore # Git 忽略文件
-
-
----
+│   ├── database.py                 # 数据库连接
+│   ├── core/                       # 认证工具
+│   ├── models/                     # 数据表模型
+│   ├── schemas/                    # Pydantic 校验模型
+│   └── routers/                    # 路由层（业务逻辑）
+├── requirements.txt                # 项目依赖
+└── .gitignore                      # Git 忽略文件
+```
 
 ## 🚀 本地运行
 
