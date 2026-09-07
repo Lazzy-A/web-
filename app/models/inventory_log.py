@@ -14,3 +14,4 @@ class InventoryLog(Base):
     operator_id = Column(Integer,ForeignKey("users.id"),nullable=False) # 操作人
     created_at = Column(DateTime(timezone=True),server_default=func.now())
     product = relationship("Product", back_populates="inventory_logs")
+    operator = relationship("User", back_populates="inventory_logs")

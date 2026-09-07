@@ -4,7 +4,13 @@ from app.database import get_db
 from app.models.product import Product
 from app.models.inventory_log import InventoryLog
 from app.models.user import User
+from app.schemas.inventory_log import InventoryLogResponse
 from app.routers.user_router import get_current_user
+from typing import Optional
+from datetime import datetime   
+def parse_date(date_str : str) -> datetime:
+    return datetime.strptime(date_str, "%Y-%m-%d")
+
 
 router = APIRouter(prefix="/inventory", tags=["库存管理"])
 
@@ -54,3 +60,32 @@ def inbound(barcode : str,quantity : int = 0,tradename : str = None,shop : str =
         "new_stock": product.stock,
         "log_id": log.id
     }
+@router.get("/log", response_model=list[InventoryLogResponse] )
+def get_log(product_id : int | None=None,start_date : str | None=None,end_date : str | None=None,skip:int =0,limit: int =100,db : Session = Depends(get_db),current_user : User = Depends(get_current_user)):
+    query = db.query(InventoryLog)  
+    if product_id:
+        query = query.filter(InventoryLog.product_id == product_id)
+    if start_date:
+            start_date = parse_date(start_date)
+            query = query.filter(InventoryLog.created_at >= start_date)
+    if end_date:
+                end_date = parse_date(end_date)
+                query = query.filter(InventoryLog.created_at <= end_date)
+    logs = query.order_by(InventoryLog.created_at.desc()).offset(skip).limit(limit).all()
+    reslut = []
+    for log in logs:
+        reslut.append({
+            "id": log.id,
+            "product_id": log.product_id,
+            "product_name": log.product.tradename if log.product else None,
+            "quantity": log.quantity,
+            "type": log.type,
+            "note": log.note,
+            "operator": log.operator.username if log.operator else None,
+            "created_at": log.created_at,
+           
+        })
+
+    return reslut
+            
+            
