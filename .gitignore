@@ -1,0 +1,36 @@
+# Python 虚拟环境
+venv/
+env/
+ENV/
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 数据库文件（SQLite）
+*.db
+*.sqlite3
+
+# 本地环境变量（含密码）
+.env
+*.env
+
+# IDE 配置（如果你用 PyCharm 或 VS Code）
+.idea/
+.vscode/
+*.iml
+
+# Alembic 生成的临时文件（不包括 migrations 目录本身，但可忽略 .pyc）
+alembic/__pycache__/
+
+# macOS 系统文件
+.DS_Store
+
+# 日志文件
+*.log
+
+# 测试报告
+.pytest_cache/
+htmlcov/
