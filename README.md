@@ -122,6 +122,7 @@ alembic upgrade head
 
 # 回滚
 alembic downgrade -1
+
 🤝 贡献
 本项目为个人学习项目，欢迎 Fork 或提出 Issue。
 
