@@ -2,6 +2,7 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta 
 from fastapi.security import OAuth2PasswordBearer
+from app.core.config import Config
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")  # 指定登录路由的URL   
 
@@ -9,10 +10,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")  # 指定登录路�
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT配置
-SECRET_KEY = "123456789abcdef"  
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
+SECRET_KEY = Config.SECRET_KEY
+ALGORITHM = Config.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = Config.ACCESS_TOKEN_EXPIRE_MINUTES
 # 加密密码成哈希值
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)

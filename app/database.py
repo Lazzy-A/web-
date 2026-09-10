@@ -1,16 +1,17 @@
-from sqlalchemy import create_engine, text,insert
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
+from app.core.config import config
 
 # 数据库连接配置
-DATABASE_NAME = "test"
-DB_USER = "root"    
-DB_PASSWORD = "123456"
-DB_HOST = "localhost"
-DB_PORT = "3306"
-# MySQL 连接字符串格式：mysql+pymysql://用户名:密码@主机地址:端口/数据库名
-DATABASE_URL=f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DATABASE_NAME}"
+DB_USER = config.DB_USER    
+DB_PASSWORD = config.DB_PASSWORD    
+DB_HOST = config.DB_HOST
+DB_PORT = config.DB_PORT
+DATABASE_NAME = config.DATABASE_NAME    
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DATABASE_NAME}"   
+
 
 def ensure_database_exists():
     try:

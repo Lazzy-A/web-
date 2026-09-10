@@ -6,6 +6,7 @@ from app.models.user import User
 from app.schemas.order import OrderCreate, OrderResponse,OrderStatusUpdate
 from sqlalchemy.orm import Session  
 from app.routers.user_router import get_current_user
+from app.routers.inventory_router import InventoryLog
 
 router = APIRouter(prefix="/orders", tags=["订单管理"])
 
@@ -67,6 +68,20 @@ def updata_order_status(order_id:int,status_data:OrderStatusUpdate,db:Session=De
     order = get_and_validate_order(order_id,db,current_user)
     if status_data.status not in["completed", "cancelled"]:
         raise HTTPException(status_code=400,detail="无效状态")
+    if status_data.status ==  "cancelled":
+        product = db.query(Product).filter(Product.id == order.product_id).first()
+        if not product:
+            raise HTTPException(status_code=404,detail="商品不存在")
+        product.stock +=order.quantity
+        log = InventoryLog(
+            product_id = product.id,
+            quantity = order.quantity,
+            type = "return",
+            note = f"订单 {order.id} 取消，恢复库存",
+            order_id = order.id,
+            operator_id = current_user.id
+        )
+        db.add(log)
     order.status = status_data.status
     db.commit()
     db.refresh(order)

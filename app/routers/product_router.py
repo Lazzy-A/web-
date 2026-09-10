@@ -14,7 +14,7 @@ router = APIRouter(prefix="/products", tags=["商品管理"])
 def get_products(
     skip: int = 0,
     limit: int = 100,
-    category_id : Optional[int] = None,
+    category_id : Optional[int] = None,   
     db: Session = Depends(get_db)
 ):
     # 查询商品，同时加载关联的分类
@@ -34,7 +34,9 @@ def get_products(
             "stock": p.stock,
             "category_id": p.category_id,
             "category_name": p.category.name if p.category else None,  # ← 关键
-            "created_at": p.created_at
+            "created_at": p.created_at,
+            "warn": "库存紧张" if p.stock < p.min_stock else None,
+            "min_stock": p.min_stock    
         })
     return result
 
@@ -43,8 +45,22 @@ def get_product(product_id:int, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商品未找到")
-    return product
+    
+    return {
+        "id": product.id,
+        "tradename": product.tradename,
+        "shop": product.shop,
+        "price": product.price,
+        "favourable": product.favourable,
+        "stock": product.stock,
+        "category_id": product.category_id,
+        "category_name": product.category.name if product.category else None,
+        "created_at": product.created_at,
+        "min_stock": product.min_stock,
+        "warn": "库存紧张" if product.stock < product.min_stock else None,
 
+        
+    }
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_product(product_data: ProductCreate, db: Session = Depends(get_db),current_user:User = Depends(get_current_user)):
     if product_data.category_id is not None:
@@ -58,7 +74,8 @@ def create_product(product_data: ProductCreate, db: Session = Depends(get_db),cu
         price=product_data.price,
         favourable=product_data.favourable,
         stock=product_data.stock,
-        category_id = product_data.category_id
+        category_id = product_data.category_id,
+        min_stock=product_data.min_stock    
     )
     # 将新商品添加到数据库
     db.add(new_product)         
@@ -78,6 +95,9 @@ def update_product(product_id: int, product_data: ProductCreate, db: Session = D
     product.price = product_data.price
     product.favourable = product_data.favourable
     product.stock = product_data.stock
+    product.category_id = product_data.category_id  
+    product.min_stock = product_data.min_stock
+
     
     db.commit()
     db.refresh(product)

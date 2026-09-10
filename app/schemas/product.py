@@ -9,6 +9,7 @@ class ProductCreate(BaseModel):
     favourable: Optional[str] = None
     stock: int
     category_id : Optional[int] = None
+    min_stock: int = 0
 
 class ProductResponse(BaseModel):
     id: int
@@ -20,6 +21,8 @@ class ProductResponse(BaseModel):
     category_id : Optional[int] = None
     category_name : Optional[str] = None
     created_at: datetime
+    warn : Optional[str] = None
+    min_stock: int
 
     @field_serializer('created_at')
     def serialize_dt(self,dt:datetime,_info):

@@ -1,4 +1,4 @@
-# 🛒 简易商城后端系统
+# 🛒 商城后端系统
 
 基于 FastAPI + SQLAlchemy + MySQL 的电商后台 API 项目，支持用户认证、商品管理、多级分类、订单处理和库存流水跟踪。
 
@@ -128,6 +128,3 @@ alembic downgrade -1
 GitHub：@Lazzy-A
 
 Email：2032433425@qq.com
-
-📄 License
-本项目仅供学习使用，未指定许可证。
