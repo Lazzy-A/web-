@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database import engine, Base
-from app.routers import user_router, product_router,order_router,category_router,inventory_router,supplier_router
+from app.routers import user_router, product_router,order_router,category_router,inventory_router,supplier_router,brand_router,warehouse_router
 from sqlalchemy import text
 from app.core.exceptions import register_exceptions_handler
 from app.core.logger import logger
@@ -22,6 +22,8 @@ app.include_router(order_router.router)
 app.include_router(category_router.router)
 app.include_router(inventory_router.router)
 app.include_router(supplier_router.router)
+app.include_router(brand_router.router)
+app.include_router(warehouse_router.router)
 @app.get("/")
 def root():
     return {"message": "服务正常运行，去 /docs 试试吧"}

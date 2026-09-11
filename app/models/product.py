@@ -20,3 +20,7 @@ class Product(Base):
     min_stock = Column(Integer, nullable=False,default=0)
     supplier_id = Column(Integer,ForeignKey("suppliers.id"),nullable=True,index=True)
     supplier = relationship("Supplier", back_populates="products")
+    brand_id = Column(Integer,ForeignKey("brands.id",ondelete = "SET NULL"),nullable=True,index=True)
+    brand = relationship("Brand",back_populates="products")
+    warehouse_id = Column(Integer,ForeignKey("warehouses.id",ondelete="SET NULL"),nullable=True,index=True)
+    warehouse = relationship("Warehouse",back_populates="products")
