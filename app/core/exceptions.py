@@ -29,8 +29,8 @@ def register_exceptions_handler(app:FastAPI):
         exc: RequestValidationError
     ):
         errors = [{
-            "field": e("loc")[-1],
-            "message": e("msg")
+            "field": e["loc"][-1],
+            "message": e["msg"]
         } for e in exc.errors()]
         logger.error(f"请求参数异常: {exc.errors()}")   
         return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,content=build_response(status.HTTP_422_UNPROCESSABLE_ENTITY,errors)) 

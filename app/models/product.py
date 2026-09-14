@@ -24,3 +24,4 @@ class Product(Base):
     brand = relationship("Brand",back_populates="products")
     warehouse_id = Column(Integer,ForeignKey("warehouses.id",ondelete="SET NULL"),nullable=True,index=True)
     warehouse = relationship("Warehouse",back_populates="products")
+    inventory_checks = relationship("InventoryCheck",back_populates="product")

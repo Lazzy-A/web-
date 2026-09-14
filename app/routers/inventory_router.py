@@ -3,8 +3,10 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.product import Product
 from app.models.inventory_log import InventoryLog
+from app.models.inventory_check import InventoryCheck
 from app.models.user import User
 from app.schemas.inventory_log import InventoryLogResponse
+from app.schemas.inventory_check import InventoryCheckCreate,InventoryCheckResponse
 from app.routers.user_router import get_current_user
 from typing import Optional
 from datetime import datetime   
@@ -87,5 +89,48 @@ def get_log(product_id : int | None=None,start_date : str | None=None,end_date :
         })
 
     return reslut
-            
-            
+
+@router.post("/check",response_model=InventoryCheckResponse)
+def check_inventory(check_data:InventoryCheckCreate ,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
+     product_id = check_data.product_id
+     actual_stock = check_data.actual_stock
+     product = db.query(Product).filter(Product.id == product_id).first()
+     if not product:
+          raise HTTPException(status_code=404,detail="商品不存在")
+     difference = actual_stock - product.stock
+     if difference == 0:
+        raise HTTPException(status_code=400,detail="库存无变化")
+     old_stock = product.stock
+     product.stock = actual_stock
+     check = InventoryCheck(
+          product_id = product.id,
+          old_stock = old_stock,
+          new_stock = check_data.actual_stock,
+          difference = difference,
+          operator_id = current_user.id,
+          note = check_data.note
+     )
+     db.add(check)
+
+     log = InventoryLog(
+          product_id = product.id,
+          quantity = difference,
+          type = "gain" if difference > 0 else "loss",
+          note = f"盘点：{check_data.note or ''}",
+          operator_id = current_user.id
+     )
+     db.add(log)
+     db.commit()
+     db.refresh(check)
+
+     return {
+        "id": check.id,
+        "product_id": product.id,
+        "product_name": product.tradename,
+        "old_stock": check.old_stock,
+        "new_stock": check.new_stock,
+        "difference": check.difference,
+        "operator": current_user.username,
+        "note": check.note,
+        "created_at": check.created_at
+    }

@@ -1,27 +1,31 @@
 from fastapi import APIRouter, Depends, HTTPException, status   
-from app.database import get_db
+from app.database import get_db,get_async_db
 from app.models.user import User
 from app.routers.user_router import get_current_user
 from app.models.product import Product
 from app.models.category import Category
 from app.schemas.product import ProductCreate, ProductResponse
 from sqlalchemy.orm import Session,joinedload
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 router = APIRouter(prefix="/products", tags=["商品管理"])
 
 @router.get("/", response_model=list[ProductResponse])
-def get_products(
+async def get_products(
     skip: int = 0,
     limit: int = 100,
     category_id : Optional[int] = None,   
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     # 查询商品，同时加载关联的分类
-    query = db.query(Product).options(joinedload(Product.category))
+    query = select(Product).options(joinedload(Product.category))
     if category_id is not None:
         query = query.filter(Product.category_id == category_id)
-    products = query.offset(skip).limit(limit).all()
+    query = query.offset(skip).limit(limit)
+    db_result = await db.execute(query)
+    products = db_result.scalars().all()
     # 手动构造返回列表，填充 category_name
     result = []
     for p in products:
@@ -41,8 +45,10 @@ def get_products(
     return result
 
 @router.get("/{product_id}", response_model=ProductResponse, status_code=status.HTTP_200_OK)
-def get_product(product_id:int, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(Product.id == product_id).first()
+async def get_product(product_id:int, db: AsyncSession = Depends(get_async_db)):
+    stmt = select(Product).options(joinedload(Product.category)).filter(Product.id == product_id)
+    result = await db.execute(stmt)
+    product = result.scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商品未找到")
     
@@ -62,9 +68,11 @@ def get_product(product_id:int, db: Session = Depends(get_db)):
         
     }
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-def create_product(product_data: ProductCreate, db: Session = Depends(get_db),current_user:User = Depends(get_current_user)):
+async def create_product(product_data: ProductCreate, db: AsyncSession = Depends(get_async_db),current_user:User = Depends(get_current_user)):
     if product_data.category_id is not None:
-        category = db.query(Category).filter(Category.id == product_data.category_id).first()
+        stmt = select(Category).filter(Category.id == product_data.category_id)
+        result = await db.execute(stmt)
+        category = result.scalar_one_or_none()
         if not category:
             raise HTTPException(status_code=404,detail="分类不存在")
     # 创建商品
@@ -79,8 +87,8 @@ def create_product(product_data: ProductCreate, db: Session = Depends(get_db),cu
     )
     # 将新商品添加到数据库
     db.add(new_product)         
-    db.commit()
-    db.refresh(new_product)  # 刷新以获取新商品的ID和创建时间   
+    await db.commit()
+    await db.refresh(new_product)  # 刷新以获取新商品的ID和创建时间   
     # 返回新创建的商品数据
     return new_product
 @router.put("/{product_id}", response_model=ProductResponse, status_code=status.HTTP_200_OK)

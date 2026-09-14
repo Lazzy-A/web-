@@ -6,7 +6,7 @@ from app.models.user import User
 from app.schemas.order import OrderCreate, OrderResponse,OrderStatusUpdate
 from sqlalchemy.orm import Session  
 from app.routers.user_router import get_current_user
-from app.routers.inventory_router import InventoryLog
+from app.models.inventory_log import InventoryLog
 
 router = APIRouter(prefix="/orders", tags=["订单管理"])
 
@@ -15,14 +15,11 @@ def get_and_validate_order(
     db: Session,
     current_user: User
 ) -> Order:
-    """查询订单并校验归属和状态（只允许操作 pending 状态的订单）"""
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="订单未找到")
     if order.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权操作此订单")
-    if order.status != "pending":
-        raise HTTPException(status_code=400, detail="只有待处理状态的订单可以操作")
     return order
 
 @router.post("/", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
@@ -64,8 +61,10 @@ def get_order(order_id:int,db:Session=Depends(get_db),current_user:User=Depends(
     return order
 
 @router.put("/{order_id}/status", response_model=OrderResponse)
-def updata_order_status(order_id:int,status_data:OrderStatusUpdate,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
+def updata_order_status(order_id:int,status_data:OrderStatusUpdate,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
     order = get_and_validate_order(order_id,db,current_user)
+    if order.status != "pending":
+        raise HTTPException(status_code=400, detail="只有待处理状态的订单可以操作")
     if status_data.status not in["completed", "cancelled"]:
         raise HTTPException(status_code=400,detail="无效状态")
     if status_data.status ==  "cancelled":
@@ -88,12 +87,8 @@ def updata_order_status(order_id:int,status_data:OrderStatusUpdate,db:Session=De
     return order
 
 @router.delete("/{order_id}", status_code=status.HTTP_200_OK)
-def delete_order(oder_id:int,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
-    order = db.query(Order).filter(Order.id==oder_id).first()
-    if not order:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="订单未找到")
-    if order.user_id!=current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="无权操作此订单")
+def delete_order(order_id:int,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
+    order = get_and_validate_order(order_id,db,current_user)
     if order.status!="pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="只有待处理状态的订单可以删除")
     db.delete(order)
