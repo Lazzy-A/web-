@@ -1,40 +1,31 @@
 from fastapi import APIRouter, Depends, HTTPException, status   
-from app.database import get_db
+from app.database import get_db,get_async_db
 from app.models.order import Order
 from app.models.product import Product
 from app.models.user import User
 from app.schemas.order import OrderCreate, OrderResponse,OrderStatusUpdate
+from sqlalchemy import update
 from sqlalchemy.orm import Session  
 from app.routers.user_router import get_current_user
 from app.models.inventory_log import InventoryLog
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select,update
 
 router = APIRouter(prefix="/orders", tags=["订单管理"])
 
-def get_and_validate_order(
-    order_id: int,
-    db: Session,
-    current_user: User
-) -> Order:
-    order = db.query(Order).filter(Order.id == order_id).first()
-    if not order:
-        raise HTTPException(status_code=404, detail="订单未找到")
-    if order.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="无权操作此订单")
-    return order
 
 @router.post("/", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
-def create_order(order_data: OrderCreate, db: Session = Depends(get_db),current_user:User = Depends(get_current_user)):
+async def create_order(order_data: OrderCreate, db: AsyncSession = Depends(get_async_db),current_user:User = Depends(get_current_user)):
     # 1. 查询商品
-    product = db.query(Product).filter(Product.id == order_data.product_id).first()
+    query = select(Product).filter(Product.id == order_data.product_id)
+    result = await db.execute(query)
+    product = result.scalar_one_or_none()
     if not product:
-        raise HTTPException(status_code=404, detail="商品不存在")
-
-    # 2. 检查库存
-    if product.stock < order_data.quantity:
-        raise HTTPException(status_code=400, detail="库存不足")
-
-    # 3. 扣库存、计算总价
-    product.stock -= order_data.quantity
+            raise HTTPException(status_code=404, detail="商品不存在")
+    stmt = update(Product).where(Product.id==order_data.product_id,Product.stock>=order_data.quantity).values(stock = Product.stock-order_data.quantity)
+    update_result = await db.execute(stmt)
+    if update_result.rowcount == 0:
+            raise HTTPException(status_code=400,detail="库存不够")
     total_price = product.price * order_data.quantity
         # 创建商品
     new_order = Order(
@@ -46,23 +37,30 @@ def create_order(order_data: OrderCreate, db: Session = Depends(get_db),current_
     )
     # 将订单添加到数据库
     db.add(new_order)         
-    db.commit()
-    db.refresh(new_order)  # 刷新以获取新商品的ID和创建时间   
+    await db.commit()
+    await db.refresh(new_order)  # 刷新以获取新商品的ID和创建时间   
     # 返回新创建的商品数据
     return new_order
 
 @router.get("/", response_model=list[OrderResponse], status_code=status.HTTP_200_OK)
 def get_orders(skip:int=0, limit:int=10, db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
-    orders = db.query(Order).filter(Order.user_id==current_user.id).order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
+    orders = db.query(Order).filter(Order.user_id==current_user.id).order_by(Order.created_at.desc()).offset(skip).limit(limit).all()         
     return orders
 @router.get("/{order_id}", response_model=OrderResponse, status_code=status.HTTP_200_OK)
-def get_order(order_id:int,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
-    order = get_and_validate_order(order_id,db,current_user)
+def get_order(order_id : int,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
+    order = db.query(Order).filter(Order.id==order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单未找到")
+    if order.user_id != current_user.id:            raise HTTPException(status_code=403, detail="无权操作此订单")
     return order
 
 @router.put("/{order_id}/status", response_model=OrderResponse)
 def updata_order_status(order_id:int,status_data:OrderStatusUpdate,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
-    order = get_and_validate_order(order_id,db,current_user)
+    order = db.query(Order).filter(Order.id==order_id).with_for_update().first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单未找到")
+    if order.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权操作此订单")
     if order.status != "pending":
         raise HTTPException(status_code=400, detail="只有待处理状态的订单可以操作")
     if status_data.status not in["completed", "cancelled"]:
@@ -87,8 +85,12 @@ def updata_order_status(order_id:int,status_data:OrderStatusUpdate,db:Session=De
     return order
 
 @router.delete("/{order_id}", status_code=status.HTTP_200_OK)
-def delete_order(order_id:int,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
-    order = get_and_validate_order(order_id,db,current_user)
+def delete_order(order_id : int,db:Session=Depends(get_db),current_user:User=Depends(get_current_user)):
+    order = db.query(Order).filter(Order.id==order_id).with_for_update().first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单未找到")
+    if order.user_id != current_user.id:  
+        raise HTTPException(status_code=403, detail="无权操作此订单")
     if order.status!="pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="只有待处理状态的订单可以删除")
     db.delete(order)
