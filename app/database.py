@@ -19,7 +19,7 @@ DATABASE_NAME = config.DATABASE_NAME
 ASYNC_DATABASE_URL = f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DATABASE_NAME}"
 
 # 同步连接字符串（仅用于启动时检查数据库是否存在）
-SYNC_DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DATABASE_NAME}"
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DATABASE_NAME}"
 
 
 def ensure_database_exists():
@@ -29,7 +29,7 @@ def ensure_database_exists():
     """
     try:
         # 先尝试连接目标数据库
-        test_engine = create_engine(SYNC_DATABASE_URL)
+        test_engine = create_engine(DATABASE_URL)
         with test_engine.connect() as connection:
             print(f"Database '{DATABASE_NAME}' exists.")
             test_engine.dispose()
@@ -58,7 +58,7 @@ def ensure_database_exists():
 # 应用启动时先检查数据库
 ensure_database_exists()
 
-sync_engine = create_engine(SYNC_DATABASE_URL)
+sync_engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False,autoflush=False,bind=sync_engine)
 
 # 创建异步引擎

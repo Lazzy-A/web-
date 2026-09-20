@@ -13,6 +13,7 @@ class Product(Base):
     price = Column(Float, nullable=False)
     favourable = Column(String(100), nullable=True)
     stock = Column(Integer, nullable=False)
+    status = Column(String(20),nullable=False,default="online")
     category_id = Column(Integer,ForeignKey("categories.id",ondelete="SET NULL"),nullable=True,index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now()) 
     category = relationship("Category", back_populates="products")
