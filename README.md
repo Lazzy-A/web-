@@ -6,7 +6,98 @@
 
 ## 📌 项目简介
 
+本项目是一个完整的 Python Web 后端应用，# 📦 货管家 (StockFlow) — 进销存管理系统
+
+基于 **FastAPI + SQLAlchemy 2.0 + MySQL** 的电商后台 API 项目，支持用户认证、商品管理、多级分类、订单处理、库存流水跟踪，配套 **React + NextUI** 前端界面。
+
+---
+
+## 📌 项目简介
+
 本项目是一个完整的 Python Web 后端应用，实现了以下核心功能：
+
+- 用户注册、登录、JWT 身份认证
+- 商品增删改查，支持按分类筛选、上下架管理
+- 多级分类树形结构（无限级嵌套）
+- 订单创建，**原子 UPDATE 扣减库存**，防止并发超卖
+- 手动入库/出库，支持通过条形码自动创建商品
+- 库存盘点（盘盈/盘亏），自动记录流水
+- 完整的库存变动流水记录，支持按商品、时间筛选
+- 供应商、品牌、仓库管理
+- 使用 **Alembic** 进行数据库迁移管理
+
+项目采用 **models / schemas / services / routers** 分层架构，适合学习 FastAPI + SQLAlchemy 的实战项目。
+
+---
+
+## 🛠️ 技术栈
+
+| 类别 | 技术 |
+| :--- | :--- |
+| 语言 | Python 3.10+ |
+| 框架 | FastAPI |
+| ORM | SQLAlchemy 2.0 (AsyncSession) |
+| 数据库 | MySQL / SQLite（开发可用 SQLite） |
+| 异步驱动 | aiomysql |
+| 迁移工具 | Alembic |
+| 认证 | JWT（python-jose）+ bcrypt（passlib） |
+| 文档 | Swagger UI（自动生成） |
+| 前端 | React + NextUI + Axios |
+| 环境管理 | venv + pip |
+
+---
+
+## 📁 项目结构
+
+```text
+web/
+├── main.py                         # 应用入口
+├── alembic/                        # 数据库迁移目录
+│   ├── versions/                   # 迁移脚本
+│   └── env.py                      # Alembic 配置
+├── alembic.ini                     # Alembic 主配置
+├── app/
+│   ├── __init__.py
+│   ├── database.py                 # 数据库连接、引擎、会话
+│   ├── core/
+│   │   ├── config.py               # 统一配置管理
+│   │   ├── exceptions.py           # 全局异常处理
+│   │   ├── logger.py               # 日志系统
+│   │   └── security.py             # JWT、密码加密
+│   ├── models/                     # 数据库表模型
+│   │   ├── user.py
+│   │   ├── product.py
+│   │   ├── category.py
+│   │   ├── order.py
+│   │   ├── inventory_log.py
+│   │   ├── inventory_check.py
+│   │   ├── supplier.py
+│   │   ├── brand.py
+│   │   └── warehouse.py
+│   ├── schemas/                    # Pydantic 校验模型
+│   │   ├── user.py
+│   │   ├── product.py
+│   │   ├── category.py
+│   │   ├── order.py
+│   │   ├── inventory_log.py
+│   │   ├── inventory_check.py
+│   │   ├── supplier.py
+│   │   ├── brand.py
+│   │   └── warehouse.py
+│   ├── services/                   # 业务逻辑层
+│   │   ├── product_service.py
+│   │   └── ...                     # 其他模块 service
+│   └── routers/                    # 路由层
+│       ├── user_router.py
+│       ├── product_router.py
+│       ├── category_router.py
+│       ├── order_router.py
+│       ├── inventory_router.py
+│       ├── supplier_router.py
+│       ├── brand_router.py
+│       ├── warehouse_router.py
+│       └── dashboard_router.py
+└── venv/                           # 虚拟环境：
 
 - 用户注册、登录、JWT 身份认证
 - 商品增删改查，支持按分类筛选
