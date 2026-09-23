@@ -1,32 +1,10 @@
-from sqlalchemy import select,func
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import get_async_db,AsyncSessionLocal
-from app.models.product import Product
-from app.models.order import Order
-from app.models.category import Category
-from fastapi import APIRouter,Depends
-import asyncio
+from fastapi import APIRouter
+from app.services import dashboard_services
+
 router = APIRouter(prefix="/dashboard", tags=["统计"])
 
 
-async def count_products():
-    async with AsyncSessionLocal() as db:
-        result = await db.execute(select(func.count(Product.id)))
-        return result.scalar()
-async def count_orders():
-    async with AsyncSessionLocal() as db:
-        result = await db.execute(select(func.count(Order.id)))
-        return result.scalar()
-async def count_categories():
-    async with AsyncSessionLocal() as db:
-        result = await db.execute(select(func.count(Category.id)))
-        return result.scalar()
 
 @router.get("/stats")
 async def get_stats():
-    products, orders, categories = await asyncio.gather(
-        count_products(),
-        count_orders(),
-        count_categories(),
-    )
-    return {"products": products, "orders": orders, "categories": categories}
+    return await dashboard_services.get_stats()

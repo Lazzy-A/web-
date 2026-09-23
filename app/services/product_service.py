@@ -5,7 +5,6 @@ from fastapi import HTTPException,status
 from app.models.product import Product
 from app.schemas.product import ProductCreate
 from app.models.category import Category
-from typing import Optional
 
 async def get_products(
     db: AsyncSession,
